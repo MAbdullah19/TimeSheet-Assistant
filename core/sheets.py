@@ -90,9 +90,9 @@ def set_meta(date: str, channel_id: str, thread_ts: str) -> None:
     values = ws.get_all_values()
     for i, r in enumerate(values[1:], start=2):
         if r and r[0] == date:
-            ws.update(values=[[date, channel_id, thread_ts]], range_name=f"A{i}:C{i}")
+            ws.update(values=[[date, channel_id, thread_ts]], range_name=f"A{i}:C{i}", value_input_option="RAW")
             return
-    ws.append_row([date, channel_id, thread_ts], value_input_option="USER_ENTERED")
+    ws.append_row([date, channel_id, thread_ts], value_input_option="RAW")
 
 
 def get_entry_msg_ts(tab_name: str, date: str) -> str | None:
@@ -125,10 +125,10 @@ def upsert_entry(
         if r and r[0] == date:
             existing_ts = r[6] if len(r) > 6 else ""
             if ts_newer(msg_ts, existing_ts):
-                ws.update(values=[row], range_name=f"A{i}:G{i}")
+                ws.update(values=[row], range_name=f"A{i}:G{i}", value_input_option="RAW")
                 return True
             return False
-    ws.append_row(row, value_input_option="USER_ENTERED")
+    ws.append_row(row, value_input_option="RAW")
     return True
 
 

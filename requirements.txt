@@ -2,3 +2,4 @@ slack_sdk
 gspread
 google-auth
 google-genai
+tzdata

@@ -3,6 +3,8 @@
 *service-account*.json
 *service_account*.json
 credentials.json
+# Google service-account key files (named <project>-<hash>.json)
+standup-bot-*.json
 
 # Python
 __pycache__/
