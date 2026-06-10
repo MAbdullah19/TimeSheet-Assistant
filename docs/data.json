@@ -1,46 +1,19 @@
 {
-  "generated_at": "2026-06-09T10:00:00+05:00",
+  "generated_at": "2026-06-10T15:09:02.122668+05:00",
   "interns": [
     {
-      "name": "Intern A",
+      "name": "Muhammad Abdullah",
       "entries": [
         {
-          "date": "2026-06-08",
-          "current_task": "Setting up the local dev environment and reading the onboarding docs.",
-          "yesterday": "Completed account access and cloned the repositories.",
-          "today_goal": "Get the project running locally and open a first draft PR.",
+          "date": "2026-06-10",
+          "current_task": "Working on the login page.",
+          "yesterday": "Set up the repo.",
+          "today_goal": "Finish the form.",
           "blockers": "None",
           "has_blocker": false,
-          "submitted_at": "2026-06-08T09:40:00+05:00"
-        },
-        {
-          "date": "2026-06-09",
-          "current_task": "Implementing the Sheets upsert logic for the standup bot.",
-          "yesterday": "Got the project running and opened a draft PR for the config module.",
-          "today_goal": "Finish upsert_entry with idempotency and write a quick test.",
-          "blockers": "Waiting on Editor access to the shared spreadsheet.",
-          "has_blocker": true,
-          "submitted_at": "2026-06-09T09:45:00+05:00"
+          "submitted_at": "2026-06-10T12:06:43.485529+05:00"
         }
       ]
-    },
-    {
-      "name": "Intern B",
-      "entries": [
-        {
-          "date": "2026-06-09",
-          "current_task": "Building the Gemini extraction prompt and parser.",
-          "yesterday": "Reviewed the data.json schema and the dashboard contract.",
-          "today_goal": "Return valid four-key dicts for tidy and messy replies.",
-          "blockers": "None",
-          "has_blocker": false,
-          "submitted_at": "2026-06-09T09:52:00+05:00"
-        }
-      ]
-    },
-    {
-      "name": "Intern C",
-      "entries": []
     }
   ]
 }

@@ -34,6 +34,16 @@ ENTRY_HEADER = [
 _spreadsheet = None
 
 
+def _as_text(value: str) -> str:
+    """Force Sheets to store a value as literal text (with USER_ENTERED input).
+
+    A leading apostrophe marks the cell as plain text; the apostrophe itself is
+    not stored and is absent on read-back. This prevents Sheets from coercing a
+    purely-numeric Slack ts (e.g. ``1749513600.123456``) into a float64, which
+    would lose trailing precision on read and break thread/message lookups."""
+    return f"'{value}"
+
+
 def _get_spreadsheet():
     """Lazily authorize and open the spreadsheet (cached per process)."""
     global _spreadsheet
@@ -87,12 +97,13 @@ def get_meta(date: str) -> dict | None:
 def set_meta(date: str, channel_id: str, thread_ts: str) -> None:
     """Append or update today's row in the `meta` tab."""
     ws = _get_spreadsheet().worksheet("meta")
+    row = [_as_text(date), _as_text(channel_id), _as_text(thread_ts)]
     values = ws.get_all_values()
     for i, r in enumerate(values[1:], start=2):
         if r and r[0] == date:
-            ws.update(values=[[date, channel_id, thread_ts]], range_name=f"A{i}:C{i}", value_input_option="RAW")
+            ws.update(values=[row], range_name=f"A{i}:C{i}", value_input_option="USER_ENTERED")
             return
-    ws.append_row([date, channel_id, thread_ts], value_input_option="RAW")
+    ws.append_row(row, value_input_option="USER_ENTERED")
 
 
 def get_entry_msg_ts(tab_name: str, date: str) -> str | None:
@@ -120,15 +131,16 @@ def upsert_entry(
         submitted_at,
         msg_ts,
     ]
+    text_row = [_as_text(v) for v in row]
     values = ws.get_all_values()
     for i, r in enumerate(values[1:], start=2):
         if r and r[0] == date:
             existing_ts = r[6] if len(r) > 6 else ""
             if ts_newer(msg_ts, existing_ts):
-                ws.update(values=[row], range_name=f"A{i}:G{i}", value_input_option="RAW")
+                ws.update(values=[text_row], range_name=f"A{i}:G{i}", value_input_option="USER_ENTERED")
                 return True
             return False
-    ws.append_row(row, value_input_option="RAW")
+    ws.append_row(text_row, value_input_option="USER_ENTERED")
     return True
 
 
