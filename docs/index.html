@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Intern Daily Standup</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1>📋 Intern Daily Standup</h1>
+    <div class="controls">
+      <label for="date-select">Date</label>
+      <select id="date-select" aria-label="Select date"></select>
+      <span id="generated-at" class="generated-at"></span>
+    </div>
+  </header>
+
+  <main>
+    <section id="board" class="board" aria-live="polite"></section>
+
+    <section class="history-section">
+      <h2>History</h2>
+      <div id="history" class="history"></div>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+{
+  "generated_at": "2026-06-09T10:00:00+05:00",
+  "interns": [
+    {
+      "name": "Intern A",
+      "entries": [
+        {
+          "date": "2026-06-08",
+          "current_task": "Setting up the local dev environment and reading the onboarding docs.",
+          "yesterday": "Completed account access and cloned the repositories.",
+          "today_goal": "Get the project running locally and open a first draft PR.",
+          "blockers": "None",
+          "has_blocker": false,
+          "submitted_at": "2026-06-08T09:40:00+05:00"
+        },
+        {
+          "date": "2026-06-09",
+          "current_task": "Implementing the Sheets upsert logic for the standup bot.",
+          "yesterday": "Got the project running and opened a draft PR for the config module.",
+          "today_goal": "Finish upsert_entry with idempotency and write a quick test.",
+          "blockers": "Waiting on Editor access to the shared spreadsheet.",
+          "has_blocker": true,
+          "submitted_at": "2026-06-09T09:45:00+05:00"
+        }
+      ]
+    },
+    {
+      "name": "Intern B",
+      "entries": [
+        {
+          "date": "2026-06-09",
+          "current_task": "Building the Gemini extraction prompt and parser.",
+          "yesterday": "Reviewed the data.json schema and the dashboard contract.",
+          "today_goal": "Return valid four-key dicts for tidy and messy replies.",
+          "blockers": "None",
+          "has_blocker": false,
+          "submitted_at": "2026-06-09T09:52:00+05:00"
+        }
+      ]
+    },
+    {
+      "name": "Intern C",
+      "entries": []
+    }
+  ]
+}
