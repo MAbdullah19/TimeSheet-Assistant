@@ -17,3 +17,8 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+
+# Project-specific ignored files
+2026-06-10-124506-local-command-caveatcaveat-the-messages-below.txt
+intern-standup-bot-plan.md
+SETUP.md
