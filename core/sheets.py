@@ -8,7 +8,10 @@ One spreadsheet, four kinds of tabs:
 
 Auth: a Google service-account JSON string in GOOGLE_SERVICE_ACCOUNT_JSON.
 """
+import functools
 import json
+import random
+import time
 
 import gspread
 from google.oauth2.service_account import Credentials
@@ -32,6 +35,43 @@ ENTRY_HEADER = [
 ]
 
 _spreadsheet = None
+
+# Transient Google Sheets API failures worth retrying: server-side 5xx and the
+# 429 rate-limit. Backoff (seconds) between attempts — anything else (e.g. a
+# 403 unshared sheet or 404 wrong ID) is permanent and re-raises immediately so
+# real misconfiguration surfaces fast instead of being buried behind retries.
+_RETRY_BACKOFF = (2, 4, 8, 16)
+_RETRY_STATUS = {429, 500, 502, 503, 504}
+
+
+def _is_transient(err: gspread.exceptions.APIError) -> bool:
+    response = getattr(err, "response", None)
+    return getattr(response, "status_code", None) in _RETRY_STATUS
+
+
+def _retry(fn):
+    """Retry a Sheets operation on transient Google API errors (5xx / 429).
+
+    Reads are naturally safe to retry. The read-then-write helpers re-check the
+    sheet on each attempt, so a retry after a write that actually landed
+    server-side (but whose response 500'd) updates the row in place rather than
+    appending a duplicate."""
+
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        for delay in _RETRY_BACKOFF:
+            try:
+                return fn(*args, **kwargs)
+            except gspread.exceptions.APIError as err:
+                if not _is_transient(err):
+                    raise
+                sleep_for = delay + random.uniform(0, delay * 0.1)
+                print(f"Transient Sheets API error ({err}); retrying in {sleep_for:.1f}s.")
+                time.sleep(sleep_for)
+        # Final attempt: let whatever it raises propagate.
+        return fn(*args, **kwargs)
+
+    return wrapper
 
 
 def _as_text(value: str) -> str:
@@ -67,6 +107,7 @@ def ts_newer(incoming: str, existing: str) -> bool:
         return incoming != existing
 
 
+@_retry
 def get_config() -> list[dict]:
     """All rows from the `config` tab, normalized."""
     ws = _get_spreadsheet().worksheet("config")
@@ -85,6 +126,7 @@ def get_config() -> list[dict]:
     return out
 
 
+@_retry
 def get_meta(date: str) -> dict | None:
     """Return {channel_id, thread_ts} for `date`, or None."""
     ws = _get_spreadsheet().worksheet("meta")
@@ -94,6 +136,7 @@ def get_meta(date: str) -> dict | None:
     return None
 
 
+@_retry
 def set_meta(date: str, channel_id: str, thread_ts: str) -> None:
     """Append or update today's row in the `meta` tab."""
     ws = _get_spreadsheet().worksheet("meta")
@@ -106,6 +149,7 @@ def set_meta(date: str, channel_id: str, thread_ts: str) -> None:
     ws.append_row(row, value_input_option="USER_ENTERED")
 
 
+@_retry
 def get_entry_msg_ts(tab_name: str, date: str) -> str | None:
     """Source Msg TS already recorded for (tab, date), or None if no row."""
     ws = _get_spreadsheet().worksheet(tab_name)
@@ -115,6 +159,7 @@ def get_entry_msg_ts(tab_name: str, date: str) -> str | None:
     return None
 
 
+@_retry
 def upsert_entry(
     tab_name: str, date: str, fields: dict, submitted_at: str, msg_ts: str
 ) -> bool:
@@ -144,6 +189,7 @@ def upsert_entry(
     return True
 
 
+@_retry
 def read_all() -> dict:
     """Build the full `data.json` structure. Derives `has_blocker` here."""
     interns = []
