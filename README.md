@@ -1,4 +1,4 @@
-#TimeSheet Assistant
+## TimeSheet Assistant
 
 A $0/month, fully serverless standup bot. Every weekday morning it posts four
 standup questions to Slack; interns reply in the thread. An hourly GitHub
