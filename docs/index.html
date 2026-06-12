@@ -3,27 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Intern Daily Standup</title>
+  <title>Daily Standup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <header class="site-header">
-    <h1>📋 Intern Daily Standup</h1>
-    <div class="controls">
-      <label for="date-select">Date</label>
-      <select id="date-select" aria-label="Select date"></select>
-      <span id="generated-at" class="generated-at"></span>
-    </div>
-  </header>
+  <div class="app">
+    <header class="site-header">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div class="brand-text">
+          <h1>Daily Standup</h1>
+          <span id="generated-at" class="generated-at"></span>
+        </div>
+      </div>
 
-  <main>
-    <section id="board" class="board" aria-live="polite"></section>
+      <div class="controls">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">
+          <span class="theme-icon"></span>
+        </button>
+        <div class="select-wrap">
+          <label for="date-select">Date</label>
+          <select id="date-select" aria-label="Select date"></select>
+        </div>
+      </div>
+    </header>
 
-    <section class="history-section">
-      <h2>History</h2>
-      <div id="history" class="history"></div>
-    </section>
-  </main>
+    <main>
+      <section id="stats" class="stats" aria-label="Summary"></section>
+
+      <section id="board" class="board" aria-live="polite"></section>
+
+      <section class="history-section">
+        <div class="section-head">
+          <h2>History</h2>
+        </div>
+        <div id="history" class="history"></div>
+      </section>
+    </main>
+  </div>
 
   <script src="./app.js"></script>
 </body>
