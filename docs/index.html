@@ -3,27 +3,56 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Intern Daily Standup</title>
+  <title>TUKL-NUST R&amp;D Center | Deep Learning Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <header class="site-header">
-    <h1>📋 Intern Daily Standup</h1>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">◆</span>
+      <span class="brand-text">
+        <span class="brand-name">TUKL-NUST R&amp;D Center</span>
+        <span class="brand-sub">Deep Learning Lab</span>
+      </span>
+    </div>
     <div class="controls">
-      <label for="date-select">Date</label>
-      <select id="date-select" aria-label="Select date"></select>
+      <label for="date-select">Day</label>
+      <div class="select-wrap">
+        <select id="date-select" aria-label="Select date"></select>
+      </div>
       <span id="generated-at" class="generated-at"></span>
     </div>
   </header>
 
   <main>
-    <section id="board" class="board" aria-live="polite"></section>
+    <section class="overview" id="overview" aria-label="Day summary"></section>
+
+    <section class="board-section">
+      <div class="section-head">
+        <h2>Today's board</h2>
+        <span class="section-meta" id="board-date"></span>
+      </div>
+      <div id="board" class="board" aria-live="polite"></div>
+    </section>
 
     <section class="history-section">
-      <h2>History</h2>
+      <div class="section-head">
+        <h2>History</h2>
+        <span class="section-meta" id="history-meta"></span>
+      </div>
       <div id="history" class="history"></div>
     </section>
   </main>
+
+  <footer class="site-footer">
+    <span>TUKL-NUST R&amp;D Center · Deep Learning Lab — intern standup tracker</span>
+  </footer>
 
   <script src="./app.js"></script>
 </body>
