@@ -1,0 +1,21 @@
+name: Post Attendance Alert
+
+# No `schedule:` on purpose — GitHub never runs this on its own. The only clock
+# is a cron-job.org job that calls this workflow's `workflow_dispatch` at 08:55
+# and 16:55 PKT, Mon–Fri (see SETUP.md, Step 11). One clock => one post per slot.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: python scripts/post_attendance_alert.py
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          ATTENDANCE_CHANNEL_ID: ${{ secrets.ATTENDANCE_CHANNEL_ID }}

@@ -19,6 +19,7 @@ except Exception:
 
 SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN", "")
 STANDUP_CHANNEL_ID = os.environ.get("STANDUP_CHANNEL_ID", "")
+ATTENDANCE_CHANNEL_ID = os.environ.get("ATTENDANCE_CHANNEL_ID", "")
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash-lite")
