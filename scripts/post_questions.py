@@ -24,7 +24,7 @@ def main() -> None:
         ":clipboard: *Daily Standup*\n"
         f"{mentions} — please reply in this thread:\n"
         "1. What is your current task?\n"
-        "2. What did you do yesterday?\n"
+        "2. What did you accomplish on your previous workday?\n"
         "3. What is the goal today?\n"
         "4. Any blockers or challenges?"
     )

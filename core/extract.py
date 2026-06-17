@@ -1,8 +1,13 @@
 """Gemini-powered extraction of the four standup fields from a free-text reply.
 
 `extract_fields(reply_text)` always returns a dict with exactly these keys:
-    current_task, yesterday, today_goal, blockers
+    current_task, previous_workday, today_goal, blockers
 It never raises — on any failure it falls back to a safe dict.
+
+Note: `previous_workday` is the work the intern completed on their *previous
+working day* (which is the prior weekday, so Monday's previous workday is the
+preceding Friday). The weekly-report job stitches these fields together — see
+`core/weekly.py`.
 """
 import json
 import re
@@ -10,17 +15,17 @@ import time
 
 from core import config
 
-KEYS = ["current_task", "yesterday", "today_goal", "blockers"]
+KEYS = ["current_task", "previous_workday", "today_goal", "blockers"]
 
 SYSTEM_INSTRUCTION = (
     "You are a data-extraction assistant for a daily standup tool. Extract "
     "exactly four fields from the intern's message and return ONLY a valid JSON "
     "object — no prose, no markdown fences:\n\n"
     "{\n"
-    '  "current_task": "what they are currently working on",\n'
-    '  "yesterday":    "what they did yesterday",\n'
-    '  "today_goal":   "their goal or plan for today",\n'
-    '  "blockers":     "any blockers or challenges; use \\"None\\" if none are mentioned"\n'
+    '  "current_task":     "what they are currently working on",\n'
+    '  "previous_workday": "what they accomplished on their previous working day",\n'
+    '  "today_goal":       "their goal or plan for today",\n'
+    '  "blockers":         "any blockers or challenges; use \\"None\\" if none are mentioned"\n'
     "}\n\n"
     "Use the intern's own words, lightly cleaned. Unmentioned fields → "
     '"Not provided" (blockers → "None"). One to three sentences per field. '
@@ -47,7 +52,7 @@ def _fallback(raw_text: str) -> dict:
     """Used when the model output cannot be parsed as JSON."""
     return {
         "current_task": (raw_text or "").strip() or "Parse error",
-        "yesterday": "Parse error",
+        "previous_workday": "Parse error",
         "today_goal": "Parse error",
         "blockers": "Parse error",
     }

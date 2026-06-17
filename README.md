@@ -9,20 +9,30 @@ Pages.
 ## How it works
 
 ```
-post_questions.py   → Slack thread + meta row        (morning, cron)
-poll_and_record.py  → replies → Gemini → Sheets + ✅  (hourly, cron)
-build_dashboard_data.py → Sheets → docs/data.json    (hourly, cron)
-docs/ (HTML/CSS/JS) → GitHub Pages dashboard
+post_questions.py     → Slack thread + meta row        (morning, cron)
+poll_and_record.py    → replies → Gemini → Sheets + ✅  (hourly, cron)
+post_weekly_report.py → Sheets → Gemini → weekly tab    (Tuesday, cron)
+build_dashboard_data.py → Sheets → docs/data.json      (hourly/weekly, cron)
+docs/ (HTML/CSS/JS)   → GitHub Pages dashboard
 ```
+
+The weekly job stitches each intern's `Previous Workday` fields across a Mon–Fri
+week into one technical paragraph via Gemini. It runs on the new week's **Tuesday**
+because Friday's work is only logged in the following Monday's standup. See
+**`WEEKLY-REPORTS-SETUP.md`**.
 
 ## Layout
 
 - `core/` — `config` (env), `sheets` (all Sheets I/O), `extract` (Gemini),
   `slack` (post / replies / react).
-- `scripts/` — the three entry points run by the workflows.
+- `core/weekly.py` — week date-math + Gemini technical summary.
+- `scripts/` — the entry points run by the workflows (`post_questions`,
+  `poll_and_record`, `post_weekly_report`, `build_dashboard_data`,
+  `post_attendance_alert`).
 - `docs/` — static dashboard + generated `data.json` (a sample is committed).
-- `.github/workflows/` — `post-standup.yml` (morning) and `poll-standup.yml`
-  (hourly poll → rebuild → deploy Pages).
+- `.github/workflows/` — `post-standup.yml` (morning), `poll-standup.yml`
+  (hourly poll → rebuild → deploy Pages), and `weekly-report.yml` (Tuesday
+  weekly summary → rebuild → deploy).
 
 ## Local development
 

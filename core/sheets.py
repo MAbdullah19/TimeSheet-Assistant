@@ -1,10 +1,14 @@
 """All Google Sheets I/O.
 
-One spreadsheet, four kinds of tabs:
+One spreadsheet, five kinds of tabs:
   * `config` — intern roster:  Slack User ID | Intern Name | Tab Name
   * `meta`   — today's thread:  Date | Channel ID | Thread TS
-  * per-intern tabs:           Date | Current Task | Yesterday | Today's Goal |
-                               Blockers | Submitted At | Source Msg TS
+  * per-intern tabs:           Date | Current Task | Previous Workday |
+                               Today's Goal | Blockers | Submitted At |
+                               Source Msg TS
+  * `weekly` — one row per (week, intern), filled by the weekly-report job:
+                               Week Start | Week End | Tab Name | Intern Name |
+                               Summary | Status | Generated At
 
 Auth: a Google service-account JSON string in GOOGLE_SERVICE_ACCOUNT_JSON.
 """
@@ -27,11 +31,23 @@ SCOPES = [
 ENTRY_HEADER = [
     "Date",
     "Current Task",
-    "Yesterday",
+    "Previous Workday",
     "Today's Goal",
     "Blockers",
     "Submitted At",
     "Source Msg TS",
+]
+
+# `weekly` tab header, in column order. One row per (Week Start, Tab Name).
+WEEKLY_TAB = "weekly"
+WEEKLY_HEADER = [
+    "Week Start",
+    "Week End",
+    "Tab Name",
+    "Intern Name",
+    "Summary",
+    "Status",
+    "Generated At",
 ]
 
 _spreadsheet = None
@@ -170,7 +186,7 @@ def upsert_entry(
     row = [
         date,
         fields.get("current_task", "Not provided"),
-        fields.get("yesterday", "Not provided"),
+        fields.get("previous_workday", "Not provided"),
         fields.get("today_goal", "Not provided"),
         fields.get("blockers", "None"),
         submitted_at,
@@ -190,8 +206,84 @@ def upsert_entry(
 
 
 @_retry
+def get_entry_field(tab_name: str, date: str, header: str) -> str:
+    """Return the value of one column (`header`) for a given date in `tab_name`,
+    or "" if there's no row for that date. Used by the weekly-report job to pull
+    each `Previous Workday` cell across a span of dates."""
+    ws = _get_spreadsheet().worksheet(tab_name)
+    for r in ws.get_all_records():
+        if str(r.get("Date", "")).strip() == date:
+            return str(r.get(header, "")).strip()
+    return ""
+
+
+@_retry
+def _ensure_weekly_tab():
+    """Return the `weekly` worksheet, creating it (with headers) if absent so the
+    job is self-provisioning rather than failing on a missing tab."""
+    ss = _get_spreadsheet()
+    try:
+        return ss.worksheet(WEEKLY_TAB)
+    except gspread.exceptions.WorksheetNotFound:
+        ws = ss.add_worksheet(title=WEEKLY_TAB, rows=100, cols=len(WEEKLY_HEADER))
+        ws.update(values=[WEEKLY_HEADER], range_name="A1", value_input_option="USER_ENTERED")
+        return ws
+
+
+@_retry
+def upsert_weekly(
+    week_start: str,
+    week_end: str,
+    tab_name: str,
+    intern_name: str,
+    summary: str,
+    status: str,
+    generated_at: str,
+) -> None:
+    """One row per (Week Start, Tab Name) in the `weekly` tab. Re-running the
+    job for the same week overwrites the existing row rather than duplicating."""
+    ws = _ensure_weekly_tab()
+    row = [week_start, week_end, tab_name, intern_name, summary, status, generated_at]
+    text_row = [_as_text(v) for v in row]
+    values = ws.get_all_values()
+    for i, r in enumerate(values[1:], start=2):
+        if len(r) >= 3 and r[0] == week_start and r[2] == tab_name:
+            ws.update(values=[text_row], range_name=f"A{i}:G{i}", value_input_option="USER_ENTERED")
+            return
+    ws.append_row(text_row, value_input_option="USER_ENTERED")
+
+
+@_retry
+def _read_weekly_by_tab() -> dict:
+    """Group every `weekly` row by Tab Name → list of summary dicts. Returns an
+    empty mapping if the tab doesn't exist yet (no weekly run has happened)."""
+    ss = _get_spreadsheet()
+    try:
+        ws = ss.worksheet(WEEKLY_TAB)
+    except gspread.exceptions.WorksheetNotFound:
+        return {}
+    out: dict[str, list] = {}
+    for r in ws.get_all_records():
+        tab = str(r.get("Tab Name", "")).strip()
+        week_start = str(r.get("Week Start", "")).strip()
+        if not tab or not week_start:
+            continue
+        out.setdefault(tab, []).append(
+            {
+                "week_start": week_start,
+                "week_end": str(r.get("Week End", "")).strip(),
+                "summary": str(r.get("Summary", "")),
+                "status": str(r.get("Status", "")).strip() or "ok",
+                "generated_at": str(r.get("Generated At", "")).strip(),
+            }
+        )
+    return out
+
+
+@_retry
 def read_all() -> dict:
     """Build the full `data.json` structure. Derives `has_blocker` here."""
+    weekly_by_tab = _read_weekly_by_tab()
     interns = []
     for c in get_config():
         ws = _get_spreadsheet().worksheet(c["tab_name"])
@@ -205,7 +297,7 @@ def read_all() -> dict:
                 {
                     "date": date,
                     "current_task": str(r.get("Current Task", "")),
-                    "yesterday": str(r.get("Yesterday", "")),
+                    "previous_workday": str(r.get("Previous Workday", "")),
                     "today_goal": str(r.get("Today's Goal", "")),
                     "blockers": blockers,
                     "has_blocker": blockers not in ("None", "Not provided", ""),
@@ -213,5 +305,10 @@ def read_all() -> dict:
                 }
             )
         entries.sort(key=lambda e: e["date"])
-        interns.append({"name": c["name"], "entries": entries})
+        weekly = sorted(
+            weekly_by_tab.get(c["tab_name"], []),
+            key=lambda w: w["week_start"],
+            reverse=True,  # newest week first
+        )
+        interns.append({"name": c["name"], "entries": entries, "weekly": weekly})
     return {"generated_at": config.now_iso(), "interns": interns}

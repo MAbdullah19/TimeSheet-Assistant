@@ -4,7 +4,7 @@
 
 const FIELD_DEFS = [
   { key: "current_task", label: "Current Task" },
-  { key: "yesterday", label: "Yesterday" },
+  { key: "previous_workday", label: "Previous Workday" },
   { key: "today_goal", label: "Today's Goal" },
   { key: "blockers", label: "Blockers", span: true },
 ];
@@ -227,7 +227,7 @@ function renderHistory() {
 
     const table = el("table", { class: "history-table" });
     const headRow = el("tr");
-    ["Date", "Current Task", "Yesterday", "Today's Goal", "Blockers"].forEach((h) =>
+    ["Date", "Current Task", "Previous Workday", "Today's Goal", "Blockers"].forEach((h) =>
       headRow.appendChild(el("th", { text: h }))
     );
     table.appendChild(el("thead", {}, [headRow]));
@@ -237,7 +237,7 @@ function renderHistory() {
       const tr = el("tr");
       tr.appendChild(el("td", { text: e.date }));
       tr.appendChild(el("td", { text: e.current_task || "—" }));
-      tr.appendChild(el("td", { text: e.yesterday || "—" }));
+      tr.appendChild(el("td", { text: e.previous_workday || "—" }));
       tr.appendChild(el("td", { text: e.today_goal || "—" }));
       const blockerTd = el("td", { text: e.blockers || "None" });
       blockerTd.className = e.has_blocker ? "row-blocker" : "row-clear";
@@ -247,6 +247,77 @@ function renderHistory() {
     table.appendChild(tbody);
     container.appendChild(details);
     details.appendChild(el("div", { class: "table-scroll" }, [table]));
+  }
+}
+
+// ── Weekly reports (one technical paragraph per intern per week) ────────────
+function prettyWeek(start, end) {
+  const a = prettyDate(start);
+  const b = prettyDate(end);
+  return `${a} – ${b}`;
+}
+
+function renderWeekly() {
+  const container = document.getElementById("weekly");
+  if (!container) return;
+  container.innerHTML = "";
+  const meta = document.getElementById("weekly-meta");
+
+  // Total weekly reports across all interns (to decide whether to show anything).
+  const totalReports = STATE.interns.reduce(
+    (n, intern) => n + (intern.weekly ? intern.weekly.length : 0),
+    0
+  );
+
+  if (STATE.interns.length === 0 || totalReports === 0) {
+    if (meta) meta.textContent = "";
+    container.appendChild(
+      el("div", {
+        class: "empty-state",
+        html: "<strong>No weekly reports yet</strong>The first summary is generated on the Tuesday after a full work week.",
+      })
+    );
+    return;
+  }
+
+  if (meta) meta.textContent = totalReports + (totalReports === 1 ? " report" : " reports");
+  const openByDefault = STATE.interns.length <= 4;
+
+  for (const intern of STATE.interns) {
+    const weeks = [...(intern.weekly || [])].sort((a, b) =>
+      b.week_start.localeCompare(a.week_start)
+    );
+
+    const details = el("details", { class: "history-intern" });
+    if (openByDefault && weeks.length > 0) details.setAttribute("open", "");
+
+    details.appendChild(
+      el("summary", {}, [
+        el("span", { class: "summary-name", text: intern.name }),
+        el("span", {
+          class: "summary-count",
+          text: weeks.length + (weeks.length === 1 ? " week" : " weeks"),
+        }),
+        el("span", { class: "summary-chevron", text: "›", attrs: { "aria-hidden": "true" } }),
+      ])
+    );
+
+    const body = el("div", { class: "weekly-body" });
+    if (weeks.length === 0) {
+      body.appendChild(el("div", { class: "card-missing-note", text: "No weekly reports yet." }));
+    } else {
+      for (const w of weeks) {
+        const noData = w.status === "no_data";
+        const block = el("div", { class: "weekly-week" + (noData ? " is-empty" : "") });
+        block.appendChild(el("div", { class: "weekly-range", text: prettyWeek(w.week_start, w.week_end) }));
+        block.appendChild(
+          el("p", { class: "weekly-summary" + (noData ? " empty" : ""), text: w.summary || "—" })
+        );
+        body.appendChild(block);
+      }
+    }
+    details.appendChild(body);
+    container.appendChild(details);
   }
 }
 
@@ -277,6 +348,7 @@ async function init() {
   select.addEventListener("change", draw);
 
   draw();
+  renderWeekly();
   renderHistory();
 }
 

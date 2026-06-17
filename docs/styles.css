@@ -367,6 +367,22 @@ main {
 .row-blocker { color: #fecdd3; }
 .row-clear { color: var(--faint); }
 
+/* ── Weekly reports (reuses the .history-intern collapsible shell) ─────────── */
+.weekly-body { border-top: 1px solid var(--line-soft); display: flex; flex-direction: column; }
+.weekly-week { padding: 0.9rem 1.1rem; }
+.weekly-week + .weekly-week { border-top: 1px solid var(--line-soft); }
+.weekly-range {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.4rem;
+}
+.weekly-summary { margin: 0; font-size: 0.92rem; line-height: 1.6; overflow-wrap: anywhere; }
+.weekly-summary.empty { color: var(--faint); font-style: italic; }
+.weekly-week.is-empty .weekly-range { color: var(--faint); }
+
 /* ── Empty states ─────────────────────────────────────────────────────────── */
 .empty-state {
   grid-column: 1 / -1;

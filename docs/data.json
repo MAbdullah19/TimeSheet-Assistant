@@ -1,17 +1,135 @@
 {
-  "generated_at": "2026-06-10T15:09:02.122668+05:00",
+  "generated_at": "2026-06-17T14:26:47.855593+05:00",
   "interns": [
     {
       "name": "Muhammad Abdullah",
       "entries": [
         {
           "date": "2026-06-10",
-          "current_task": "Working on the login page.",
-          "yesterday": "Set up the repo.",
+          "current_task": "Dashboard layout",
+          "previous_workday": "Set up the repo.",
           "today_goal": "Finish the form.",
           "blockers": "None",
           "has_blocker": false,
-          "submitted_at": "2026-06-10T12:06:43.485529+05:00"
+          "submitted_at": "2026-06-10T15:51:08.227479+05:00"
+        },
+        {
+          "date": "2026-06-11",
+          "current_task": "Fixing the automation of the bot.",
+          "previous_workday": "Set up the environment variables and figured out free APIs for multiple tech stacks.",
+          "today_goal": "Check if the automation is working fine for now.",
+          "blockers": "Facing difficulty finding a free tier low traffic automation agent, as GitHub Actions has a very long queue. Hopefully will solve this blocker by tomorrow myself.",
+          "has_blocker": true,
+          "submitted_at": "2026-06-11T14:09:37.551999+05:00"
+        },
+        {
+          "date": "2026-06-12",
+          "current_task": "Working on the UI of the dashboard for publicity of the intern reports.",
+          "previous_workday": "Fixed the automation schedules, and pivoted from actions to low traffic cron jobs, effectively removing the queue enlistment waiting problem for routine jobs.",
+          "today_goal": "Get a minimal version of the dashboard.",
+          "blockers": "None",
+          "has_blocker": false,
+          "submitted_at": "2026-06-12T15:40:18.184579+05:00"
+        },
+        {
+          "date": "2026-06-15",
+          "current_task": "Designing a new feature for the slack bot to send out attendance alerts routinely as a reminder to interns.",
+          "previous_workday": "Yesterday was a weekend, so no work was done.",
+          "today_goal": "Redesign the dashboard UI and include an additional feature for the slack bot.",
+          "blockers": "None",
+          "has_blocker": false,
+          "submitted_at": "2026-06-15T16:25:25.342219+05:00"
+        }
+      ],
+      "weekly": [
+        {
+          "week_start": "2026-06-08",
+          "week_end": "2026-06-12",
+          "summary": "The intern focused on foundational engineering tasks, beginning by establishing the project repository and configuring necessary environment variables. They successfully integrated free APIs across multiple tech stacks, enhancing the project's flexibility. A significant improvement was made to automation schedules, transitioning from GitHub Actions to low-traffic cron jobs. This pivot effectively resolved queue enlistment waiting issues for routine tasks, streamlining the workflow.",
+          "status": "ok",
+          "generated_at": "2026-06-17T14:25:07.900862+05:00"
+        }
+      ]
+    },
+    {
+      "name": "Amna Ahmed",
+      "entries": [
+        {
+          "date": "2026-06-11",
+          "current_task": "Diving into the architecture of transformers on a surface level.",
+          "previous_workday": "Tested the same deep neural network but with circular classification data.",
+          "today_goal": "Learned about large language models and implemented a deep neural network from scratch on a spiral dataset.",
+          "blockers": "None",
+          "has_blocker": false,
+          "submitted_at": "2026-06-11T17:52:57.903379+05:00"
+        },
+        {
+          "date": "2026-06-12",
+          "current_task": "Looking into course 1: Neural Networks and Deep Learning as part of the deep learning specialization.",
+          "previous_workday": "Demystified the architecture and training process of language models and tested deep neural network on spiral and circular datasets.",
+          "today_goal": "Get most if not all of course 1 done.",
+          "blockers": "Unavailability of assignments of the course, which would hopefully be sorted in a few days.",
+          "has_blocker": true,
+          "submitted_at": "2026-06-12T13:02:35.642599+05:00"
+        },
+        {
+          "date": "2026-06-15",
+          "current_task": "Looking into Course 1 of deep learning and brainstorming for version 2 timesheet assistant.",
+          "previous_workday": "No work was done due to the weekend.",
+          "today_goal": "Hopefully get Course 1 of deep learning done.",
+          "blockers": "None",
+          "has_blocker": false,
+          "submitted_at": "2026-06-15T09:18:54.855209+05:00"
+        },
+        {
+          "date": "2026-06-16",
+          "current_task": "Looking into the neural network course 1 week 3.",
+          "previous_workday": "Completed week 2 programming assignments.",
+          "today_goal": "At least get the week 3 done today.",
+          "blockers": "None",
+          "has_blocker": false,
+          "submitted_at": "2026-06-16T09:18:22.111149+05:00"
+        },
+        {
+          "date": "2026-06-17",
+          "current_task": "Looking into the assignment of week 4 course 1 of DL specialization.",
+          "previous_workday": "Completed week 3 and 4 except the last assignment.",
+          "today_goal": "Complete course 1 and start course 2.",
+          "blockers": "None",
+          "has_blocker": false,
+          "submitted_at": "2026-06-17T09:13:16.520739+05:00"
+        }
+      ],
+      "weekly": [
+        {
+          "week_start": "2026-06-08",
+          "week_end": "2026-06-12",
+          "summary": "Tested the same deep neural network but with circular classification data. Demystified the architecture and training process of language models and tested deep neural network on spiral and circular datasets. No work was done due to the weekend.",
+          "status": "ok",
+          "generated_at": "2026-06-17T14:25:07.900862+05:00"
+        }
+      ]
+    },
+    {
+      "name": "Umar Hayat Ali",
+      "entries": [
+        {
+          "date": "2026-06-17",
+          "current_task": "Looking for free ML course sources and getting details about the project.",
+          "previous_workday": "Completed course 1 of the ML specialization.",
+          "today_goal": "Complete at least week 1 of ML specialization course 2 if a source can be found.",
+          "blockers": "Locked weeks in Coursera, as the majority of the content is locked.",
+          "has_blocker": true,
+          "submitted_at": "2026-06-17T09:18:49.493629+05:00"
+        }
+      ],
+      "weekly": [
+        {
+          "week_start": "2026-06-08",
+          "week_end": "2026-06-12",
+          "summary": "No work activity was logged for this intern during the reporting week.",
+          "status": "no_data",
+          "generated_at": "2026-06-17T14:25:07.900862+05:00"
         }
       ]
     }
