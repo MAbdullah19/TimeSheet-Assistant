@@ -168,7 +168,7 @@ clash.
 The workflow's built-in GitHub `schedule:` is:
 
 ```
-cron: "0 5 * * 2"   # 10:00 PKT (UTC+5) every Tuesday
+cron: "0 5 * * 2"   # 05:00 UTC = 10:00 PKT (UTC+5) every Tuesday
 ```
 
 As explained in `notes.md`, GitHub's `schedule:` is best-effort and can be late
