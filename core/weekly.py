@@ -41,18 +41,34 @@ _WORKDAY_OFFSETS = [
 ]
 
 SYSTEM_INSTRUCTION = (
-    "You are a technical writer at a deep-learning research lab. You are given an "
-    "intern's day-by-day notes describing the engineering and research work they "
-    "completed over one work week. Synthesize them into a SINGLE cohesive "
-    "paragraph that reads as a polished weekly progress summary.\n\n"
-    "Requirements:\n"
-    "- Use precise, technical language; preserve concrete details (models, "
-    "datasets, metrics, tools, components, experiments) the intern mentions.\n"
-    "- Write in the third person, past tense.\n"
-    "- Produce exactly one paragraph of flowing prose — no bullet points, no "
-    "headings, no day-by-day enumeration, no markdown.\n"
-    "- Do NOT mention that any day is missing, sparse, or that information is "
-    "incomplete. Summarize only what is present.\n"
+    "You are a senior technical writer at a deep-learning research lab. You are "
+    "given an intern's terse, day-by-day notes describing the engineering and "
+    "research work they completed over one work week. Your job is NOT to copy the "
+    "notes — it is to rewrite them into a SINGLE polished, detailed, technical "
+    "paragraph that reads as a professional weekly progress report.\n\n"
+    "Actively transform the input:\n"
+    "- Expand shorthand and terse phrasing into complete, fluent technical "
+    "sentences. Where a note is a fragment, develop it into a proper statement of "
+    "what was done and why it mattered.\n"
+    "- Refine and elevate the language: use precise domain vocabulary appropriate "
+    "to deep-learning engineering and research (architectures, training "
+    "procedures, datasets, pipelines, infrastructure, evaluation, tooling).\n"
+    "- Add reasonable technical context and significance for the work described — "
+    "explain the purpose, approach, or engineering rationale that a knowledgeable "
+    "reader would infer — so the paragraph reads as substantive and informative.\n"
+    "- Preserve every concrete detail the intern mentions (specific models, "
+    "datasets, metrics, tools, components, experiments, results). Never drop them.\n\n"
+    "Hard constraints:\n"
+    "- Do NOT invent specific quantitative results, metrics, accuracies, dataset "
+    "names, or outcomes that the notes do not contain. Elaborate on the meaning "
+    "and context of the stated work, but do not fabricate facts or numbers.\n"
+    "- Write in the third person, past tense, referring to the person as 'the "
+    "intern'.\n"
+    "- Produce exactly one cohesive paragraph of flowing prose — no bullet points, "
+    "no headings, no day-by-day enumeration, no markdown.\n"
+    "- Strip all meta-commentary and filler: never mention weekends, days off, "
+    "that no work was done on some day, that any day is missing or sparse, or that "
+    "information is incomplete. Summarize only the actual work that is present.\n"
     "- Return only the paragraph text, nothing else."
 )
 
@@ -117,8 +133,15 @@ def generate_summary(pieces: list[str]) -> str:
     except Exception:
         return fallback
 
-    gen_config = types.GenerateContentConfig(system_instruction=SYSTEM_INSTRUCTION)
-    prompt = "Daily notes for the week:\n" + joined
+    gen_config = types.GenerateContentConfig(
+        system_instruction=SYSTEM_INSTRUCTION, temperature=0.2
+    )
+    prompt = (
+        "Rewrite the following terse daily notes into one detailed, polished, "
+        "technical weekly progress paragraph, following the system instruction. "
+        "Elaborate and refine; do not copy the notes verbatim.\n\n"
+        "Daily notes for the week:\n" + joined
+    )
 
     import time
 
