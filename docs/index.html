@@ -14,48 +14,39 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">
+    <a class="brand" href="#/" aria-label="Home">
       <span class="brand-mark" aria-hidden="true">◆</span>
       <span class="brand-text">
         <span class="brand-name">TUKL-NUST R&amp;D Center</span>
         <span class="brand-sub">Deep Learning Lab</span>
       </span>
-    </div>
-    <div class="controls">
-      <label for="date-select">Day</label>
-      <div class="select-wrap">
-        <select id="date-select" aria-label="Select date"></select>
+    </a>
+
+    <nav class="nav" aria-label="Primary">
+      <a class="nav-link" data-route="/" href="#/">Today</a>
+      <a class="nav-link" data-route="/directory" href="#/directory">Directory</a>
+    </nav>
+
+    <div class="nav-tools">
+      <div class="search" role="search">
+        <input
+          id="nav-search"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="Search interns…"
+          aria-label="Search interns"
+          aria-haspopup="listbox"
+          aria-expanded="false"
+        />
+        <div id="nav-search-results" class="search-results" role="listbox" hidden></div>
       </div>
       <span id="generated-at" class="generated-at"></span>
     </div>
   </header>
 
   <main>
-    <section class="overview" id="overview" aria-label="Day summary"></section>
-
-    <section class="board-section">
-      <div class="section-head">
-        <h2>Today's board</h2>
-        <span class="section-meta" id="board-date"></span>
-      </div>
-      <div id="board" class="board" aria-live="polite"></div>
-    </section>
-
-    <section class="weekly-section">
-      <div class="section-head">
-        <h2>Weekly reports</h2>
-        <span class="section-meta" id="weekly-meta"></span>
-      </div>
-      <div id="weekly" class="history"></div>
-    </section>
-
-    <section class="history-section">
-      <div class="section-head">
-        <h2>History</h2>
-        <span class="section-meta" id="history-meta"></span>
-      </div>
-      <div id="history" class="history"></div>
-    </section>
+    <div id="view" aria-live="polite"></div>
   </main>
 
   <footer class="site-footer">
