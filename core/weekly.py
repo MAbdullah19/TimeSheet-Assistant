@@ -129,7 +129,7 @@ def generate_summary(pieces: list[str]) -> str:
         return fallback
 
     try:
-        client = genai.Client(api_key=config.GEMINI_API_KEY)
+        client = genai.Client(api_key=config.GEMINI_API_KEY_WEEKLY)
     except Exception:
         return fallback
 
@@ -145,20 +145,53 @@ def generate_summary(pieces: list[str]) -> str:
 
     import time
 
-    delay = 1
-    for attempt in range(3):
-        try:
-            resp = client.models.generate_content(
-                model=config.GEMINI_MODEL, contents=prompt, config=gen_config
-            )
-            text = (getattr(resp, "text", "") or "").strip()
-            return text or fallback
-        except Exception as e:  # noqa: BLE001
-            if "429" in str(e) and attempt < 2:
-                time.sleep(delay)
-                delay *= 2
-                continue
-            break
+    # Try the primary model first, then a fallback if the primary is
+    # persistently unavailable (503 / 5xx). The fallback is always on the
+    # free tier so it costs nothing extra.
+    _FALLBACK_MODEL = "gemini-2.0-flash"
+    models_to_try = [config.GEMINI_MODEL]
+    if config.GEMINI_MODEL != _FALLBACK_MODEL:
+        models_to_try.append(_FALLBACK_MODEL)
+
+    _TRANSIENT_CODES = ("429", "500", "502", "503", "504")
+
+    for model in models_to_try:
+        delay = 2
+        for attempt in range(4):
+            try:
+                resp = client.models.generate_content(
+                    model=model, contents=prompt, config=gen_config
+                )
+                # resp.text is a property that can raise ValueError (not
+                # AttributeError) when the response has no valid candidates or
+                # was blocked.  getattr(..., default) only catches
+                # AttributeError, so a ValueError would propagate to the outer
+                # except, hit the non-transient `break`, and silently return
+                # the raw fallback — which is just the daily notes
+                # concatenated verbatim.
+                try:
+                    text = (resp.text or "").strip()
+                except Exception as text_err:  # noqa: BLE001
+                    print(f"  [weekly] Could not read Gemini response text: {text_err}")
+                    text = ""
+                if text:
+                    return text
+                print(f"  [weekly] {model} returned empty text; retrying.")
+            except Exception as e:  # noqa: BLE001
+                err_str = str(e)
+                is_transient = any(code in err_str for code in _TRANSIENT_CODES)
+                print(f"  [weekly] {model} attempt {attempt + 1}/4 failed: {e}")
+                if is_transient and attempt < 3:
+                    time.sleep(delay)
+                    delay *= 2
+                    continue
+                if not is_transient:
+                    break  # permanent error — don't retry this model
+        # If we're here, all attempts for this model failed; try next model.
+        if len(models_to_try) > 1 and model == models_to_try[0]:
+            print(f"  [weekly] {model} exhausted; falling back to {_FALLBACK_MODEL}.")
+
+    print("  [weekly] All models exhausted; returning raw fallback.")
     return fallback
 
 

@@ -26,6 +26,7 @@ jobs:
       - run: python scripts/post_weekly_report.py
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY_WEEKLY: ${{ secrets.GEMINI_API_KEY_WEEKLY }}
           GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}

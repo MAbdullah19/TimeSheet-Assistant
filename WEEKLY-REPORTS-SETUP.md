@@ -98,7 +98,8 @@ Step 7:
 
 | Used by the weekly job | Why |
 |---|---|
-| `GEMINI_API_KEY` | Generate the summary paragraph |
+| `GEMINI_API_KEY_WEEKLY` | (Optional) Dedicated API key for weekly reports to avoid daily rate limits. Falls back to `GEMINI_API_KEY` if not set. |
+| `GEMINI_API_KEY` | Generate the summary paragraph (used if `GEMINI_API_KEY_WEEKLY` is absent) |
 | `GEMINI_MODEL` | Same model (`gemini-2.5-flash-lite`) |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | Read the daily data, write the `weekly` tab |
 | `SPREADSHEET_ID` | Which spreadsheet |
@@ -106,8 +107,7 @@ Step 7:
 
 The weekly job does **not** use Slack, so it needs no Slack secrets.
 
-If you keep a local `.env`, no changes are needed there either — the same keys
-already cover it.
+If you keep a local `.env`, no changes are needed there unless you want to use a separate key for weekly reports.
 
 ---
 
