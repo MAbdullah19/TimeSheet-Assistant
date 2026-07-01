@@ -2,7 +2,7 @@ name: Poll Standup & Deploy
 
 on:
   schedule:
-    - cron: "0 4-14 * * 1-5"  # top of each hour, 09:00–19:00 PKT, Mon–Fri
+    - cron: "55 18 * * 1-5"  # 23:55 PKT, Mon–Fri
   workflow_dispatch: {}
 
 # Allow only one concurrent deployment.

@@ -168,7 +168,7 @@ clash.
 The workflow's built-in GitHub `schedule:` is:
 
 ```
-cron: "0 5 * * 2"   # 05:00 UTC = 10:00 PKT (UTC+5) every Tuesday
+cron: "0 3 * * 2"   # 03:00 UTC = 08:00 PKT (UTC+5) every Tuesday
 ```
 
 As explained in `notes.md`, GitHub's `schedule:` is best-effort and can be late
@@ -209,7 +209,7 @@ filename/owner/repo or an out-of-scope token; `401` a bad/expired token.
 3. **URL:** the endpoint from §5.1.
 4. **Schedule:** custom —
    - **Minutes:** `0`.
-   - **Hours:** `10` (→ 10:00 PKT; your account timezone is already
+   - **Hours:** `8` (→ 08:00 PKT; your account timezone is already
      `Asia/Karachi` from `SETUP.md` Step 9.3).
    - **Days of month / Months:** every (`*`).
    - **Days of week:** **Tuesday only** (untick everything except Tue).
@@ -242,7 +242,7 @@ filename/owner/repo or an out-of-scope token; `401` a bad/expired token.
 | **Post Standup** | cron-job.org → `workflow_dispatch` at 09:00 PKT Mon–Fri | GitHub `schedule:` `0 4 * * 1-5` |
 | **Poll Standup & Deploy** | GitHub `schedule:` hourly 09:00–19:00 PKT (self-healing) | optional cron-job.org trigger |
 | **Post Attendance Alert** | cron-job.org → `workflow_dispatch` at 08:55 & 16:55 PKT | none (cron-job.org is the only clock) |
-| **Weekly Report & Deploy** | GitHub `schedule:` `0 5 * * 2` (Tuesday 10:00 PKT) | optional cron-job.org trigger (§5) |
+| **Weekly Report & Deploy** | GitHub `schedule:` `0 3 * * 2` (Tuesday 08:00 PKT) | optional cron-job.org trigger (§5) |
 
 ---
 

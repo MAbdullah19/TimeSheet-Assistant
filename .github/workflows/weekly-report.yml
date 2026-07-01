@@ -2,10 +2,10 @@ name: Weekly Report & Deploy
 
 on:
   schedule:
-    # 10:00 PKT (UTC+5) every Tuesday. Tuesday so the previous Monday's standup
+    # 08:00 PKT (UTC+5) every Tuesday. Tuesday so the previous Monday's standup
     # — which carries the prior Friday's work in its "Previous Workday" field —
     # has already been polled and recorded (see core/weekly.py).
-    - cron: "0 5 * * 2"
+    - cron: "0 3 * * 2"
   workflow_dispatch: {}
 
 # Share the `pages` concurrency group with Poll Standup & Deploy so the two
