@@ -89,6 +89,179 @@ function prettyWeek(start, end) {
   return `${prettyDate(start)} – ${prettyDate(end)}`;
 }
 
+// ── Calendar date picker ─────────────────────────────────────────────────────
+// A compact, self-contained popover calendar reused by the Today board and each
+// intern's History tab. It navigates months instead of a long scroll of dates.
+// Only days that carry data are selectable; blocked days get a rose marker.
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+const WEEKDAY_LABELS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]; // Monday-first
+const CAL_ICON =
+  '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" ' +
+  'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 3v3M16 3v3"/></svg>';
+
+// Local-time "YYYY-MM-DD" (never touches UTC, so no off-by-one across timezones).
+function ymd(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+function parseYmd(s) {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+function monthIndex(y, m) {
+  return y * 12 + m;
+}
+
+// opts: { selected, dates:[YYYY-MM-DD], meta:{date:{blocked}}, onSelect, placeholder }
+function makeDatePicker(opts) {
+  const { dates = [], meta = {}, onSelect, placeholder = "Pick a date" } = opts;
+  const availSet = new Set(dates);
+  const sorted = [...dates].sort();
+  const minMi = sorted.length ? (() => { const d = parseYmd(sorted[0]); return monthIndex(d.getFullYear(), d.getMonth()); })() : Infinity;
+  const maxMi = sorted.length ? (() => { const d = parseYmd(sorted[sorted.length - 1]); return monthIndex(d.getFullYear(), d.getMonth()); })() : -Infinity;
+  let selDate = opts.selected || null;
+
+  const start = selDate ? parseYmd(selDate) : (sorted.length ? parseYmd(sorted[sorted.length - 1]) : new Date());
+  let viewY = start.getFullYear();
+  let viewM = start.getMonth();
+
+  const root = el("div", { class: "datepicker" });
+  const trigger = el("button", {
+    class: "dp-trigger",
+    attrs: { type: "button", "aria-haspopup": "dialog", "aria-expanded": "false" },
+  });
+  const panel = el("div", { class: "dp-panel", attrs: { role: "dialog", "aria-label": "Choose a date" } });
+  panel.hidden = true;
+  root.appendChild(trigger);
+  root.appendChild(panel);
+
+  // panel scaffold: header (prev · label · next), weekday row, day grid
+  const prevBtn = el("button", { class: "dp-nav", html: "‹", attrs: { type: "button", "aria-label": "Previous month" } });
+  const nextBtn = el("button", { class: "dp-nav", html: "›", attrs: { type: "button", "aria-label": "Next month" } });
+  const label = el("div", { class: "dp-label", attrs: { "aria-live": "polite" } });
+  panel.appendChild(el("div", { class: "dp-head" }, [prevBtn, label, nextBtn]));
+  const wkRow = el("div", { class: "dp-weekdays" });
+  for (const w of WEEKDAY_LABELS) wkRow.appendChild(el("span", { class: "dp-wk", text: w }));
+  panel.appendChild(wkRow);
+  const grid = el("div", { class: "dp-grid" });
+  panel.appendChild(grid);
+
+  let cellByDate = {};
+  const canPrev = () => monthIndex(viewY, viewM) > minMi;
+  const canNext = () => monthIndex(viewY, viewM) < maxMi;
+
+  function updateTrigger() {
+    trigger.innerHTML = "";
+    trigger.appendChild(el("span", { class: "dp-ico", html: CAL_ICON }));
+    trigger.appendChild(el("span", { class: "dp-trigger-text" + (selDate ? "" : " is-placeholder"), text: selDate ? prettyDate(selDate) : placeholder }));
+    trigger.appendChild(el("span", { class: "dp-caret", html: "▾", attrs: { "aria-hidden": "true" } }));
+  }
+
+  function renderGrid() {
+    grid.innerHTML = "";
+    cellByDate = {};
+    label.textContent = MONTH_NAMES[viewM] + " " + viewY;
+    prevBtn.disabled = !canPrev();
+    nextBtn.disabled = !canNext();
+
+    const first = new Date(viewY, viewM, 1);
+    const lead = (first.getDay() + 6) % 7; // Monday-first leading blanks
+    const daysInMonth = new Date(viewY, viewM + 1, 0).getDate();
+    const todayStr = ymd(new Date());
+
+    for (let i = 0; i < lead; i++) grid.appendChild(el("span", { class: "dp-cell dp-blank" }));
+    for (let day = 1; day <= daysInMonth; day++) {
+      const ds = `${viewY}-${String(viewM + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      const has = availSet.has(ds);
+      const cls = ["dp-cell", "dp-day"];
+      if (!has) cls.push("is-disabled");
+      if (has) cls.push(meta[ds] && meta[ds].blocked ? "is-blocked" : "has-data");
+      if (ds === selDate) cls.push("is-selected");
+      if (ds === todayStr) cls.push("is-today");
+      const cell = el("button", {
+        class: cls.join(" "),
+        text: String(day),
+        attrs: { type: "button", "data-date": ds, tabindex: "-1", "aria-label": prettyDate(ds) + (has ? "" : " — no update") },
+      });
+      if (!has) cell.setAttribute("aria-disabled", "true");
+      if (ds === selDate) cell.setAttribute("aria-current", "date");
+      if (has) cell.addEventListener("click", () => choose(ds));
+      cell.addEventListener("keydown", onDayKey);
+      cellByDate[ds] = cell;
+      grid.appendChild(cell);
+    }
+  }
+
+  function choose(ds) {
+    selDate = ds;
+    updateTrigger();
+    if (onSelect) onSelect(ds);
+    close();
+    trigger.focus();
+  }
+
+  function focusDate(ds) {
+    const d = parseYmd(ds);
+    const mi = monthIndex(d.getFullYear(), d.getMonth());
+    if (mi < minMi || mi > maxMi) return; // stay inside the data range
+    if (d.getFullYear() !== viewY || d.getMonth() !== viewM) {
+      viewY = d.getFullYear();
+      viewM = d.getMonth();
+      renderGrid();
+    }
+    const cell = cellByDate[ds];
+    if (cell) cell.focus();
+  }
+
+  function onDayKey(e) {
+    let delta = 0;
+    if (e.key === "ArrowLeft") delta = -1;
+    else if (e.key === "ArrowRight") delta = 1;
+    else if (e.key === "ArrowUp") delta = -7;
+    else if (e.key === "ArrowDown") delta = 7;
+    else if (e.key === "Escape") { close(); trigger.focus(); return; }
+    else return;
+    e.preventDefault();
+    const d = parseYmd(e.target.getAttribute("data-date"));
+    d.setDate(d.getDate() + delta);
+    focusDate(ymd(d));
+  }
+
+  let outside = null;
+  function open() {
+    if (!sorted.length) return;
+    panel.hidden = false;
+    trigger.setAttribute("aria-expanded", "true");
+    root.classList.add("is-open");
+    renderGrid();
+    const focusTarget = (selDate && cellByDate[selDate]) || grid.querySelector(".dp-day.has-data, .dp-day.is-blocked") || grid.querySelector(".dp-day");
+    if (focusTarget) focusTarget.focus();
+    outside = (ev) => { if (!root.contains(ev.target)) { close(); } };
+    document.addEventListener("mousedown", outside);
+  }
+  function close() {
+    panel.hidden = true;
+    trigger.setAttribute("aria-expanded", "false");
+    root.classList.remove("is-open");
+    if (outside) { document.removeEventListener("mousedown", outside); outside = null; }
+  }
+
+  trigger.addEventListener("click", () => { panel.hidden ? open() : close(); });
+  trigger.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+  prevBtn.addEventListener("click", () => { if (canPrev()) { if (--viewM < 0) { viewM = 11; viewY--; } renderGrid(); } });
+  nextBtn.addEventListener("click", () => { if (canNext()) { if (++viewM > 11) { viewM = 0; viewY++; } renderGrid(); } });
+
+  if (!sorted.length) trigger.disabled = true;
+  updateTrigger();
+  return { root, setSelected(ds) { selDate = ds; updateTrigger(); } };
+}
+
 // ── Reusable pieces ──────────────────────────────────────────────────────────
 function statusPill(entry) {
   if (!entry) return el("span", { class: "pill none" }, [el("span", { class: "dot" }), el("span", { text: "Awaiting" })]);
@@ -150,7 +323,7 @@ function historyTable(entries) {
 
   const tbody = el("tbody");
   for (const e of entries) {
-    const tr = el("tr");
+    const tr = el("tr", { attrs: { "data-date": e.date } });
     tr.appendChild(el("td", { text: e.date, attrs: { "data-label": "Date" } }));
     tr.appendChild(el("td", { text: e.current_task || "—", attrs: { "data-label": "Current Task" } }));
     tr.appendChild(el("td", { text: e.previous_workday || "—", attrs: { "data-label": "Previous Workday" } }));
@@ -183,30 +356,34 @@ function viewToday(root) {
     SELECTED_DATE = dates.includes(today) ? today : dates[0] || null;
   }
 
-  // controls row: date selector
-  const select = el("select", { attrs: { "aria-label": "Select date", id: "date-select" } });
-  if (dates.length === 0) {
-    select.appendChild(el("option", { text: "No data", value: "" }));
-    select.disabled = true;
-  } else {
-    for (const d of dates) select.appendChild(el("option", { text: prettyDate(d), value: d }));
-    select.value = SELECTED_DATE;
+  // controls row: calendar date picker (blocked days flagged so gaps stand out)
+  const dateMeta = {};
+  for (const d of dates) {
+    let blocked = false;
+    for (const intern of STATE.interns) {
+      const e = entryForDate(intern, d);
+      if (e && e.has_blocker) { blocked = true; break; }
+    }
+    dateMeta[d] = { blocked };
   }
-  select.addEventListener("change", () => {
-    SELECTED_DATE = select.value;
-    redrawToday(root);
+  const picker = makeDatePicker({
+    selected: SELECTED_DATE,
+    dates,
+    meta: dateMeta,
+    placeholder: "No data",
+    onSelect: (d) => { SELECTED_DATE = d; redrawToday(root); },
   });
 
   root.appendChild(
     el("div", { class: "view-controls" }, [
-      el("label", { text: "Day", attrs: { for: "date-select" } }),
-      el("div", { class: "select-wrap" }, [select]),
+      el("label", { text: "Day" }),
+      picker.root,
     ])
   );
 
   root.appendChild(el("section", { class: "overview", attrs: { id: "overview", "aria-label": "Day summary" } }));
   const boardHead = el("div", { class: "section-head" }, [
-    el("h2", { text: "Today's board" }),
+    el("h2", { text: "Bulletin board" }),
     el("span", { class: "section-meta", attrs: { id: "board-date" } }),
   ]);
   root.appendChild(
@@ -393,9 +570,35 @@ function renderHistoryTab(root, intern, s) {
   root.appendChild(sectionHead("History", s.count + (s.count === 1 ? " entry" : " entries")));
   if (s.count === 0) {
     root.appendChild(emptyState("No entries yet", "This intern hasn't submitted a standup."));
-  } else {
-    root.appendChild(historyTable(s.entries));
+    return;
   }
+
+  const tableWrap = historyTable(s.entries);
+
+  // Calendar to jump straight to a day instead of scrolling the whole log.
+  const dates = s.entries.map((e) => e.date);
+  const meta = {};
+  s.entries.forEach((e) => { meta[e.date] = { blocked: e.has_blocker }; });
+  const picker = makeDatePicker({
+    selected: null,
+    dates,
+    meta,
+    placeholder: "Jump to date…",
+    onSelect: (d) => {
+      const rows = tableWrap.querySelectorAll("tr[data-date]");
+      rows.forEach((r) => r.classList.toggle("is-focus", r.getAttribute("data-date") === d));
+      const target = tableWrap.querySelector('tr[data-date="' + d + '"]');
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
+    },
+  });
+  root.appendChild(
+    el("div", { class: "view-controls" }, [
+      el("label", { text: "Jump to" }),
+      picker.root,
+    ])
+  );
+
+  root.appendChild(tableWrap);
 }
 
 function renderWeeklyTab(root, weeks) {

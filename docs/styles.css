@@ -523,6 +523,138 @@ main {
 }
 .view-controls select:hover { border-color: var(--accent); }
 
+/* ── Calendar date picker (Today board + intern history) ──────────────────── */
+.datepicker { position: relative; display: inline-block; }
+
+.dp-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.7rem;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+.dp-trigger:hover:not(:disabled) { border-color: var(--accent); }
+.dp-trigger:disabled { opacity: 0.55; cursor: default; }
+.datepicker.is-open .dp-trigger { border-color: var(--accent); }
+.dp-ico { display: inline-flex; color: var(--accent); }
+.dp-trigger-text { white-space: nowrap; }
+.dp-trigger-text.is-placeholder { color: var(--muted); }
+.dp-caret { color: var(--muted); font-size: 0.7rem; margin-left: 0.1rem; }
+.datepicker.is-open .dp-caret { transform: rotate(180deg); }
+
+.dp-panel {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  z-index: 30;
+  width: 18rem;
+  max-width: min(92vw, 20rem);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.85rem;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.5);
+}
+
+.dp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+.dp-label { font-family: var(--display); font-weight: 600; font-size: 0.95rem; }
+.dp-nav {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.dp-nav:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.dp-nav:disabled { opacity: 0.3; cursor: default; }
+
+.dp-weekdays, .dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+.dp-weekdays { margin-bottom: 0.3rem; }
+.dp-wk {
+  text-align: center;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0;
+}
+.dp-grid { gap: 2px; }
+
+.dp-cell {
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  position: relative;
+}
+.dp-blank { visibility: hidden; }
+
+.dp-day { cursor: pointer; transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease; }
+.dp-day:hover:not(.is-disabled) { background: var(--accent-soft); border-color: rgba(124, 131, 255, 0.3); }
+
+/* a small marker under days that carry an update */
+.dp-day.has-data::after,
+.dp-day.is-blocked::after {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+.dp-day.has-data::after { background: var(--accent); }
+.dp-day.is-blocked::after { background: var(--bad); }
+
+.dp-day.is-disabled { color: var(--faint); opacity: 0.5; cursor: default; }
+.dp-day.is-today { border-color: var(--line); font-weight: 700; }
+
+.dp-day.is-selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0c0f16;
+  font-weight: 700;
+}
+.dp-day.is-selected::after { background: #0c0f16; }
+.dp-day.is-selected.is-blocked::after { background: var(--bad); }
+
+/* highlighted history row after a calendar jump */
+.history-table tr.is-focus td { background: var(--accent-soft); }
+.history-table tr.is-focus td:first-child { color: var(--accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .history-table tr.is-focus { animation: rowGlow 1.4s ease; }
+  @keyframes rowGlow {
+    0%, 30% { box-shadow: inset 0 0 0 2px rgba(124, 131, 255, 0.55); }
+    100%    { box-shadow: inset 0 0 0 2px transparent; }
+  }
+}
+
 .board.single { grid-template-columns: minmax(0, 1fr); }
 .card-name-link { text-decoration: none; color: inherit; }
 .card-name-link:hover { color: var(--accent); }
