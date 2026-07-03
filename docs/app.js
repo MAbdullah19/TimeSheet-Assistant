@@ -583,7 +583,7 @@ function renderHistoryTab(root, intern, s) {
     selected: null,
     dates,
     meta,
-    placeholder: "Jump to date…",
+    placeholder: "Latest",
     onSelect: (d) => {
       const rows = tableWrap.querySelectorAll("tr[data-date]");
       rows.forEach((r) => r.classList.toggle("is-focus", r.getAttribute("data-date") === d));
