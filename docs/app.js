@@ -1,8 +1,11 @@
 // Static standup dashboard — a small hash-routed SPA over a single ./data.json.
 // No framework, no build step: it runs as-is on GitHub Pages. Routes:
-//   #/                  Today's board (overview + per-day board)
-//   #/directory         Searchable grid of all interns
-//   #/intern/<name>     One intern's full profile (history + weekly + blockers)
+//   #/                       Today's board (overview + per-day board)
+//   #/directory              Searchable grid of all interns
+//   #/intern/<name>          One intern's profile — Overview (latest update)
+//   #/intern/<name>/history  · full standup history
+//   #/intern/<name>/weekly   · weekly reports
+//   #/intern/<name>/blockers · blockers logged so far
 // A global search box in the nav jumps straight to any intern's profile.
 
 const FIELD_DEFS = [
@@ -148,11 +151,11 @@ function historyTable(entries) {
   const tbody = el("tbody");
   for (const e of entries) {
     const tr = el("tr");
-    tr.appendChild(el("td", { text: e.date }));
-    tr.appendChild(el("td", { text: e.current_task || "—" }));
-    tr.appendChild(el("td", { text: e.previous_workday || "—" }));
-    tr.appendChild(el("td", { text: e.today_goal || "—" }));
-    const blockerTd = el("td", { text: e.blockers || "None" });
+    tr.appendChild(el("td", { text: e.date, attrs: { "data-label": "Date" } }));
+    tr.appendChild(el("td", { text: e.current_task || "—", attrs: { "data-label": "Current Task" } }));
+    tr.appendChild(el("td", { text: e.previous_workday || "—", attrs: { "data-label": "Previous Workday" } }));
+    tr.appendChild(el("td", { text: e.today_goal || "—", attrs: { "data-label": "Today's Goal" } }));
+    const blockerTd = el("td", { text: e.blockers || "None", attrs: { "data-label": "Blockers" } });
     blockerTd.className = e.has_blocker ? "row-blocker" : "row-clear";
     tr.appendChild(blockerTd);
     tbody.appendChild(tr);
@@ -309,8 +312,13 @@ function directoryCard(intern, i) {
   return card;
 }
 
-// ── View: Intern profile ─────────────────────────────────────────────────────
-function viewProfile(root, name) {
+// ── View: Intern profile (tabbed sub-pages) ──────────────────────────────────
+// The profile is split into four sub-pages so a long history/weekly/blocker log
+// stays navigable: #/intern/<name> (overview) and #/intern/<name>/{history,
+// weekly,blockers}. A persistent header + tab bar sits above the active panel.
+const PROFILE_TABS = ["overview", "history", "weekly", "blockers"];
+
+function viewProfile(root, name, tab) {
   const intern = internByName(name);
   root.appendChild(el("a", { class: "back-link", text: "← All interns", attrs: { href: "#/directory" } }));
 
@@ -320,68 +328,109 @@ function viewProfile(root, name) {
   }
 
   const s = internStats(intern);
+  const weeks = [...(intern.weekly || [])].sort((a, b) => b.week_start.localeCompare(a.week_start));
+  const blocked = s.entries.filter((e) => e.has_blocker);
+  if (!PROFILE_TABS.includes(tab)) tab = "overview";
 
-  // header
+  // header (avatar, name, status, summary chips)
   const chips = el("div", { class: "profile-chips" });
   chips.appendChild(profileChip(String(s.count), s.count === 1 ? "Entry" : "Entries"));
   chips.appendChild(profileChip(s.lastDate || "—", "Last reported"));
   chips.appendChild(profileChip(String(s.blockers), s.blockers === 1 ? "Blocked day" : "Blocked days", s.blockers > 0 ? "bad" : "ok"));
+  const head = el("section", { class: "profile-head" }, [
+    el("span", { class: "avatar avatar-lg", text: initials(intern.name), attrs: { "aria-hidden": "true" } }),
+    el("div", { class: "profile-id" }, [el("h1", { class: "profile-name", text: intern.name }), statusPill(s.latest)]),
+    chips,
+  ]);
+
+  // header + tab bar travel together, tightly spaced, above the active panel
   root.appendChild(
-    el("section", { class: "profile-head" }, [
-      el("span", { class: "avatar avatar-lg", text: initials(intern.name), attrs: { "aria-hidden": "true" } }),
-      el("div", { class: "profile-id" }, [el("h1", { class: "profile-name", text: intern.name }), statusPill(s.latest)]),
-      chips,
+    el("div", { class: "profile-top" }, [
+      head,
+      profileTabs(intern.name, tab, { history: s.count, weekly: weeks.length, blockers: blocked.length }),
     ])
   );
 
-  // latest update card
-  if (s.latest) {
-    root.appendChild(sectionHead("Latest update", prettyDate(s.latest.date)));
-    root.appendChild(el("div", { class: "board single" }, [entryCard(intern, s.latest, 0, false)]));
-  }
+  const panel = el("div", { class: "profile-panel" });
+  root.appendChild(panel);
+  if (tab === "history") renderHistoryTab(panel, intern, s);
+  else if (tab === "weekly") renderWeeklyTab(panel, weeks);
+  else if (tab === "blockers") renderBlockersTab(panel, blocked);
+  else renderOverviewTab(panel, intern, s);
+}
 
-  // full history
+function profileTabs(name, active, counts) {
+  const defs = [
+    { key: "overview", label: "Overview" },
+    { key: "history", label: "History", count: counts.history },
+    { key: "weekly", label: "Weekly reports", count: counts.weekly },
+    { key: "blockers", label: "Blockers", count: counts.blockers, danger: true },
+  ];
+  const nav = el("nav", { class: "profile-tabs", attrs: { "aria-label": "Profile sections" } });
+  for (const d of defs) {
+    const on = d.key === active;
+    const children = [el("span", { text: d.label })];
+    if (d.count != null && d.count > 0) {
+      children.push(el("span", { class: "ptab-count" + (d.danger ? " danger" : ""), text: String(d.count) }));
+    }
+    const attrs = { href: profileTabHref(name, d.key) };
+    if (on) attrs["aria-current"] = "page";
+    nav.appendChild(el("a", { class: "ptab" + (on ? " is-active" : ""), attrs }, children));
+  }
+  return nav;
+}
+
+function renderOverviewTab(root, intern, s) {
+  if (!s.latest) {
+    root.appendChild(emptyState("No updates yet", "This intern hasn't submitted a standup."));
+    return;
+  }
+  root.appendChild(sectionHead("Latest update", prettyDate(s.latest.date)));
+  root.appendChild(el("div", { class: "board single" }, [entryCard(intern, s.latest, 0, false)]));
+}
+
+function renderHistoryTab(root, intern, s) {
   root.appendChild(sectionHead("History", s.count + (s.count === 1 ? " entry" : " entries")));
   if (s.count === 0) {
     root.appendChild(emptyState("No entries yet", "This intern hasn't submitted a standup."));
   } else {
     root.appendChild(historyTable(s.entries));
   }
+}
 
-  // weekly reports
-  const weeks = [...(intern.weekly || [])].sort((a, b) => b.week_start.localeCompare(a.week_start));
+function renderWeeklyTab(root, weeks) {
   root.appendChild(sectionHead("Weekly reports", weeks.length ? weeks.length + (weeks.length === 1 ? " report" : " reports") : ""));
   if (weeks.length === 0) {
     root.appendChild(emptyState("No weekly reports yet", "The first summary is generated on the Tuesday after a full work week."));
-  } else {
-    const body = el("div", { class: "weekly-list" });
-    for (const w of weeks) {
-      const noData = w.status === "no_data";
-      const block = el("div", { class: "weekly-week" + (noData ? " is-empty" : "") });
-      block.appendChild(el("div", { class: "weekly-range", text: prettyWeek(w.week_start, w.week_end) }));
-      block.appendChild(el("p", { class: "weekly-summary" + (noData ? " empty" : ""), text: w.summary || "—" }));
-      body.appendChild(block);
-    }
-    root.appendChild(body);
+    return;
   }
+  const body = el("div", { class: "weekly-list" });
+  for (const w of weeks) {
+    const noData = w.status === "no_data";
+    const block = el("div", { class: "weekly-week" + (noData ? " is-empty" : "") });
+    block.appendChild(el("div", { class: "weekly-range", text: prettyWeek(w.week_start, w.week_end) }));
+    block.appendChild(el("p", { class: "weekly-summary" + (noData ? " empty" : ""), text: w.summary || "—" }));
+    body.appendChild(block);
+  }
+  root.appendChild(body);
+}
 
-  // blockers timeline
-  const blocked = s.entries.filter((e) => e.has_blocker);
+function renderBlockersTab(root, blocked) {
   root.appendChild(sectionHead("Blockers", blocked.length ? blocked.length + (blocked.length === 1 ? " day" : " days") : ""));
   if (blocked.length === 0) {
     root.appendChild(emptyState("No blockers logged", "Every reported day was on track."));
-  } else {
-    const list = el("div", { class: "timeline" });
-    for (const e of blocked) {
-      list.appendChild(
-        el("div", { class: "timeline-item" }, [
-          el("div", { class: "timeline-date", text: e.date }),
-          el("div", { class: "timeline-text", text: e.blockers || "—" }),
-        ])
-      );
-    }
-    root.appendChild(list);
+    return;
   }
+  const list = el("div", { class: "timeline" });
+  for (const e of blocked) {
+    list.appendChild(
+      el("div", { class: "timeline-item" }, [
+        el("div", { class: "timeline-date", text: e.date }),
+        el("div", { class: "timeline-text", text: e.blockers || "—" }),
+      ])
+    );
+  }
+  root.appendChild(list);
 }
 
 function profileChip(value, label, cls) {
@@ -465,13 +514,21 @@ function profileHref(name) {
   return "#/intern/" + encodeURIComponent(name);
 }
 
+function profileTabHref(name, tab) {
+  const base = "#/intern/" + encodeURIComponent(name);
+  return tab && tab !== "overview" ? base + "/" + tab : base;
+}
+
 function parseRoute() {
   const hash = location.hash.replace(/^#/, "");
   const parts = hash.split("/").filter(Boolean); // e.g. ["intern","Some%20Name"]
   if (parts.length === 0) return { name: "home", route: "/" };
   if (parts[0] === "directory") return { name: "directory", route: "/directory" };
   if (parts[0] === "intern" && parts[1]) {
-    return { name: "profile", route: "/intern", param: decodeURIComponent(parts.slice(1).join("/")) };
+    // Intern names are encodeURIComponent-encoded (slashes → %2F), so parts[1]
+    // is always the whole name and parts[2], if present, is the sub-page tab.
+    const tab = parts[2] ? decodeURIComponent(parts[2]) : "overview";
+    return { name: "profile", route: "/intern", param: decodeURIComponent(parts[1]), tab };
   }
   return { name: "home", route: "/" };
 }
@@ -493,7 +550,7 @@ function router() {
   window.scrollTo(0, 0);
 
   if (r.name === "directory") viewDirectory(view);
-  else if (r.name === "profile") viewProfile(view, r.param);
+  else if (r.name === "profile") viewProfile(view, r.param, r.tab);
   else viewToday(view);
 }
 
