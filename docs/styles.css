@@ -42,8 +42,9 @@
    page wider than the viewport (the default min-width:auto causes overflow). */
 main, #view, .board, .card, .card-head, .card-id, .fields, .field-block,
 .overview, .stat, .history, .history-intern, .table-scroll,
-.dir-grid, .dir-card, .profile-head, .profile-id, .timeline-item,
-.profile-top, .profile-tabs, .profile-panel { min-width: 0; }
+.dir-grid, .dir-card, .profile-head, .profile-id, .profile-id-row, .timeline-item,
+.profile-top, .profile-tabs, .profile-panel,
+.board-groups, .dir-groups, .sup-group, .sup-head, .sup-head-text { min-width: 0; }
 
 html { -webkit-text-size-adjust: 100%; overflow-x: hidden; }
 
@@ -197,6 +198,52 @@ main {
   letter-spacing: 0.1em;
 }
 .stat-sub { color: var(--faint); font-size: 0.78rem; }
+
+/* ── Supervisor groups (Bulletin board + Directory) ───────────────────────── */
+/* Each supervisor's interns sit in their own headed block; the stack of blocks
+   replaces the single board/dir-grid when the roster carries supervisors. */
+.board-groups, .dir-groups {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.5rem, 3.5vw, 2.4rem);
+}
+.sup-group { display: flex; flex-direction: column; gap: 1.1rem; }
+
+.sup-head { display: flex; align-items: center; gap: 0.7rem; }
+.sup-badge {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9px;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.72rem;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid rgba(124, 131, 255, 0.3);
+}
+.sup-head-text { display: flex; flex-direction: column; line-height: 1.2; }
+.sup-name {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 1.05rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sup-meta { color: var(--muted); font-family: var(--mono); font-size: 0.72rem; }
+.sup-meta.has-blocked { color: var(--bad); }
+/* trailing hairline that runs the group name into the edge of the board */
+.sup-rule { flex: 1; height: 1px; background: var(--line-soft); }
+
+.sup-head.is-unassigned .sup-badge {
+  color: var(--faint);
+  background: var(--surface-2);
+  border-color: var(--line);
+}
+.sup-head.is-unassigned .sup-name { color: var(--muted); }
 
 /* ── Board (fills the row at any headcount) ───────────────────────────────── */
 .board {
@@ -717,8 +764,18 @@ main {
   border-radius: var(--radius);
   padding: 1.4rem 1.5rem;
 }
-.profile-id { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.profile-id { display: flex; flex-direction: column; align-items: flex-start; gap: 0.45rem; }
+.profile-id-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 .profile-name { margin: 0; font-size: 1.5rem; }
+.profile-supervisor { display: flex; align-items: baseline; gap: 0.5rem; }
+.psup-label {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.psup-name { color: var(--muted); font-size: 0.9rem; }
 .profile-chips { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-left: auto; }
 .profile-chip {
   background: var(--surface-2);

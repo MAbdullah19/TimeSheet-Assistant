@@ -1,7 +1,9 @@
 """All Google Sheets I/O.
 
 One spreadsheet, five kinds of tabs:
-  * `config` — intern roster:  Slack User ID | Intern Name | Tab Name
+  * `config` — intern roster:  Slack User ID | Intern Name | Tab Name |
+                               Supervisor (optional — groups interns on the
+                               dashboard; blank rows fall under "Unassigned")
   * `meta`   — today's thread:  Date | Channel ID | Thread TS
   * per-intern tabs:           Date | Current Task | Previous Workday |
                                Today's Goal | Blockers | Submitted At |
@@ -137,6 +139,7 @@ def get_config() -> list[dict]:
                 "slack_user_id": slack_id,
                 "name": str(r.get("Intern Name", "")).strip(),
                 "tab_name": str(r.get("Tab Name", "")).strip(),
+                "supervisor": str(r.get("Supervisor", "")).strip(),
             }
         )
     return out
@@ -310,5 +313,12 @@ def read_all() -> dict:
             key=lambda w: w["week_start"],
             reverse=True,  # newest week first
         )
-        interns.append({"name": c["name"], "entries": entries, "weekly": weekly})
+        interns.append(
+            {
+                "name": c["name"],
+                "supervisor": c.get("supervisor", ""),
+                "entries": entries,
+                "weekly": weekly,
+            }
+        )
     return {"generated_at": config.now_iso(), "interns": interns}

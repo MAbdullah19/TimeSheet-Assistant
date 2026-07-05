@@ -51,6 +51,51 @@ function internByName(name) {
   return STATE.interns.find((i) => i.name === name) || null;
 }
 
+// ── Supervisor grouping ──────────────────────────────────────────────────────
+// Interns are grouped under their supervisor (the `Supervisor` column in the
+// sheet's `config` tab). Rows with no supervisor collect under "Unassigned",
+// which always sorts last. When no intern has a supervisor set, the views fall
+// back to a single flat, un-headed list.
+const NO_SUPERVISOR = "Unassigned";
+
+function supervisorOf(intern) {
+  return (intern.supervisor || "").trim();
+}
+
+function hasSupervisors(interns) {
+  return interns.some(supervisorOf);
+}
+
+// Group interns into [{ supervisor, interns }], supervisors A→Z, Unassigned last.
+function groupBySupervisor(interns) {
+  const groups = new Map();
+  for (const intern of interns) {
+    const sup = supervisorOf(intern) || NO_SUPERVISOR;
+    if (!groups.has(sup)) groups.set(sup, []);
+    groups.get(sup).push(intern);
+  }
+  return [...groups.keys()]
+    .sort((a, b) => {
+      if (a === NO_SUPERVISOR) return 1;
+      if (b === NO_SUPERVISOR) return -1;
+      return a.localeCompare(b);
+    })
+    .map((supervisor) => ({ supervisor, interns: groups.get(supervisor) }));
+}
+
+// Shared supervisor group header: initials badge · name · meta · trailing rule.
+function supervisorHead(supervisor, metaText, blocked) {
+  const textWrap = el("div", { class: "sup-head-text" }, [
+    el("div", { class: "sup-name", text: supervisor }),
+    metaText ? el("div", { class: "sup-meta" + (blocked ? " has-blocked" : ""), text: metaText }) : null,
+  ]);
+  return el("div", { class: "sup-head" + (supervisor === NO_SUPERVISOR ? " is-unassigned" : "") }, [
+    el("span", { class: "sup-badge", text: initials(supervisor), attrs: { "aria-hidden": "true" } }),
+    textWrap,
+    el("span", { class: "sup-rule", attrs: { "aria-hidden": "true" } }),
+  ]);
+}
+
 // Summary numbers for a single intern (used by directory cards + profile header).
 function internStats(intern) {
   const entries = [...(intern.entries || [])].sort((a, b) => b.date.localeCompare(a.date));
@@ -387,7 +432,7 @@ function viewToday(root) {
     el("span", { class: "section-meta", attrs: { id: "board-date" } }),
   ]);
   root.appendChild(
-    el("section", { class: "board-section" }, [boardHead, el("div", { class: "board", attrs: { id: "board" } })])
+    el("section", { class: "board-section" }, [boardHead, el("div", { class: "board-groups", attrs: { id: "board" } })])
   );
 
   redrawToday(root);
@@ -424,20 +469,44 @@ function redrawToday(root) {
     overview.appendChild(card);
   });
 
-  // board
+  // board — interns grouped under their supervisor (flat when none are set)
   board.innerHTML = "";
   if (STATE.interns.length === 0) {
     board.appendChild(emptyState("No interns yet", "Add interns to the roster and their updates will appear here."));
     return;
   }
-  STATE.interns.forEach((intern, i) => {
-    board.appendChild(entryCard(intern, entryForDate(intern, date), i, true));
-  });
+  const grouped = groupBySupervisor(STATE.interns);
+  const showHeads = hasSupervisors(STATE.interns);
+  let i = 0; // global stagger index so the rise animation flows across groups
+  for (const group of grouped) {
+    const section = el("div", { class: "sup-group" });
+    if (showHeads) {
+      let reported = 0, blocked = 0;
+      for (const intern of group.interns) {
+        const e = date ? entryForDate(intern, date) : null;
+        if (e) { reported += 1; if (e.has_blocker) blocked += 1; }
+      }
+      const n = group.interns.length;
+      let meta = `${reported}/${n} reported`;
+      if (blocked) meta += ` · ${blocked} blocked`;
+      section.appendChild(supervisorHead(group.supervisor, meta, blocked > 0));
+    }
+    const grid = el("div", { class: "board" });
+    group.interns.forEach((intern) => {
+      grid.appendChild(entryCard(intern, entryForDate(intern, date), i++, true));
+    });
+    section.appendChild(grid);
+    board.appendChild(section);
+  }
 }
 
 // ── View: Directory ──────────────────────────────────────────────────────────
 function viewDirectory(root) {
-  root.appendChild(sectionHead("Interns", STATE.interns.length + (STATE.interns.length === 1 ? " intern" : " interns")));
+  const grouped = hasSupervisors(STATE.interns);
+  const supCount = grouped ? new Set(STATE.interns.map((i) => supervisorOf(i) || NO_SUPERVISOR)).size : 0;
+  const countText = STATE.interns.length + (STATE.interns.length === 1 ? " intern" : " interns") +
+    (grouped ? " · " + supCount + (supCount === 1 ? " supervisor" : " supervisors") : "");
+  root.appendChild(sectionHead("Interns", countText));
 
   if (STATE.interns.length === 0) {
     root.appendChild(emptyState("No interns yet", "Interns appear here once they submit their first standup."));
@@ -446,22 +515,35 @@ function viewDirectory(root) {
 
   const input = el("input", {
     class: "dir-search",
-    attrs: { type: "text", placeholder: "Search by name…", "aria-label": "Filter interns", autocomplete: "off", spellcheck: "false" },
+    attrs: { type: "text", placeholder: "Search by name or supervisor…", "aria-label": "Filter interns", autocomplete: "off", spellcheck: "false" },
   });
   root.appendChild(el("div", { class: "dir-search-wrap" }, [input]));
 
-  const grid = el("div", { class: "dir-grid" });
-  root.appendChild(grid);
+  const groupsWrap = el("div", { class: "dir-groups" });
+  root.appendChild(groupsWrap);
 
   const draw = (q) => {
-    grid.innerHTML = "";
+    groupsWrap.innerHTML = "";
     const needle = (q || "").trim().toLowerCase();
-    const matches = STATE.interns.filter((i) => i.name.toLowerCase().includes(needle));
+    const matches = STATE.interns.filter(
+      (i) => i.name.toLowerCase().includes(needle) || supervisorOf(i).toLowerCase().includes(needle)
+    );
     if (matches.length === 0) {
-      grid.appendChild(emptyState("No matches", "No intern name contains “" + q + "”."));
+      groupsWrap.appendChild(emptyState("No matches", "No intern or supervisor contains “" + q + "”."));
       return;
     }
-    matches.forEach((intern, i) => grid.appendChild(directoryCard(intern, i)));
+    let i = 0; // global stagger index across groups
+    for (const group of groupBySupervisor(matches)) {
+      const section = el("div", { class: "sup-group" });
+      if (grouped) {
+        const n = group.interns.length;
+        section.appendChild(supervisorHead(group.supervisor, n + (n === 1 ? " intern" : " interns")));
+      }
+      const grid = el("div", { class: "dir-grid" });
+      group.interns.forEach((intern) => grid.appendChild(directoryCard(intern, i++)));
+      section.appendChild(grid);
+      groupsWrap.appendChild(section);
+    }
   };
 
   input.addEventListener("input", () => draw(input.value));
@@ -514,9 +596,21 @@ function viewProfile(root, name, tab) {
   chips.appendChild(profileChip(String(s.count), s.count === 1 ? "Entry" : "Entries"));
   chips.appendChild(profileChip(s.lastDate || "—", "Last reported"));
   chips.appendChild(profileChip(String(s.blockers), s.blockers === 1 ? "Blocked day" : "Blocked days", s.blockers > 0 ? "bad" : "ok"));
+  const idChildren = [
+    el("div", { class: "profile-id-row" }, [el("h1", { class: "profile-name", text: intern.name }), statusPill(s.latest)]),
+  ];
+  const supervisor = supervisorOf(intern);
+  if (supervisor) {
+    idChildren.push(
+      el("div", { class: "profile-supervisor" }, [
+        el("span", { class: "psup-label", text: "Supervisor" }),
+        el("span", { class: "psup-name", text: supervisor }),
+      ])
+    );
+  }
   const head = el("section", { class: "profile-head" }, [
     el("span", { class: "avatar avatar-lg", text: initials(intern.name), attrs: { "aria-hidden": "true" } }),
-    el("div", { class: "profile-id" }, [el("h1", { class: "profile-name", text: intern.name }), statusPill(s.latest)]),
+    el("div", { class: "profile-id" }, idChildren),
     chips,
   ]);
 

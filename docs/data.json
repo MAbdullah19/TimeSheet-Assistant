@@ -3,6 +3,7 @@
   "interns": [
     {
       "name": "Muhammad Abdullah",
+      "supervisor": "Professor 1",
       "entries": [
         {
           "date": "2026-06-10",
@@ -80,6 +81,7 @@
     },
     {
       "name": "Amna Ahmed",
+      "supervisor": "Professor 2",
       "entries": [
         {
           "date": "2026-06-11",
@@ -148,6 +150,7 @@
     },
     {
       "name": "Umar Hayat Ali",
+      "supervisor": "Professor 1",
       "entries": [
         {
           "date": "2026-06-17",
