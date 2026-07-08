@@ -134,6 +134,20 @@ function prettyWeek(start, end) {
   return `${prettyDate(start)} – ${prettyDate(end)}`;
 }
 
+// Monday-of-week "YYYY-MM-DD" for a given date (weeks run Mon–Sun, matching the
+// weekly reports and the calendar's Monday-first layout).
+function weekStartOf(dateStr) {
+  const d = parseYmd(dateStr);
+  const dow = (d.getDay() + 6) % 7; // Mon=0 … Sun=6
+  d.setDate(d.getDate() - dow);
+  return ymd(d);
+}
+function weekEndOf(startStr) {
+  const d = parseYmd(startStr);
+  d.setDate(d.getDate() + 6);
+  return ymd(d);
+}
+
 // ── Calendar date picker ─────────────────────────────────────────────────────
 // A compact, self-contained popover calendar reused by the Today board and each
 // intern's History tab. It navigates months instead of a long scroll of dates.
@@ -367,7 +381,33 @@ function historyTable(entries) {
   table.appendChild(el("thead", {}, [headRow]));
 
   const tbody = el("tbody");
+  let currentWeek = null;
+  // entries arrive newest-first; drop a labelled divider row whenever the
+  // Monday-anchored week changes so long logs break into scannable chunks.
+  const weekGroups = [];
   for (const e of entries) {
+    const ws = weekStartOf(e.date);
+    if (!weekGroups.length || weekGroups[weekGroups.length - 1].start !== ws) {
+      weekGroups.push({ start: ws, count: 0 });
+    }
+    weekGroups[weekGroups.length - 1].count += 1;
+  }
+  const weekCount = {};
+  weekGroups.forEach((g) => { weekCount[g.start] = g.count; });
+
+  for (const e of entries) {
+    const ws = weekStartOf(e.date);
+    if (ws !== currentWeek) {
+      currentWeek = ws;
+      const n = weekCount[ws];
+      const divTr = el("tr", { class: "week-divider" });
+      const divTd = el("td", { attrs: { colspan: "5" } }, [
+        el("span", { class: "week-divider-range", text: prettyWeek(ws, weekEndOf(ws)) }),
+        el("span", { class: "week-divider-count", text: n + (n === 1 ? " entry" : " entries") }),
+      ]);
+      divTr.appendChild(divTd);
+      tbody.appendChild(divTr);
+    }
     const tr = el("tr", { attrs: { "data-date": e.date } });
     tr.appendChild(el("td", { text: e.date, attrs: { "data-label": "Date" } }));
     tr.appendChild(el("td", { text: e.current_task || "—", attrs: { "data-label": "Current Task" } }));

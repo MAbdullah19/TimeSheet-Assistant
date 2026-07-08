@@ -416,6 +416,30 @@ main {
 .row-blocker { color: #fecdd3; }
 .row-clear { color: var(--faint); }
 
+/* Weekly divider rows break the history log into Mon–Sun chunks. */
+.history-table tr.week-divider td {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+  border-top: 1px solid var(--line);
+  padding: 0.4rem 0.85rem;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.week-divider-range {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  font-weight: 600;
+}
+.week-divider-count {
+  margin-left: 0.6rem;
+  font-size: 0.72rem;
+  color: var(--faint);
+}
+
 /* ── Weekly reports (reuses the .history-intern collapsible shell) ─────────── */
 .weekly-body { border-top: 1px solid var(--line-soft); display: flex; flex-direction: column; }
 .weekly-week { padding: 0.9rem 1.1rem; }
@@ -917,6 +941,20 @@ main {
     color: var(--accent);
     font-weight: 600;
   }
+  /* Divider drops its card shell and reads as a plain week heading. */
+  .history-table tr.week-divider {
+    background: none;
+    border: none;
+    border-radius: 0;
+    margin-top: 0.35rem;
+  }
+  .history-table tr.week-divider td {
+    background: none;
+    border: none;
+    padding: 0.2rem 0.15rem 0.35rem;
+    position: static;
+  }
+  .history-table tr.week-divider td::before { content: none; }
 }
 
 @media (max-width: 540px) {
