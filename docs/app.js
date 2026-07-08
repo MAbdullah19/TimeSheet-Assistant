@@ -794,20 +794,29 @@ function setupNavSearch() {
   const render = () => {
     const q = input.value.trim().toLowerCase();
     results.innerHTML = "";
+    // Match by intern name OR supervisor, case-insensitively — the same rule the
+    // directory filter uses, so both searches behave identically.
     items = q
-      ? STATE.interns.filter((i) => i.name.toLowerCase().includes(q)).slice(0, 8)
+      ? STATE.interns
+          .filter((i) => i.name.toLowerCase().includes(q) || supervisorOf(i).toLowerCase().includes(q))
+          .slice(0, 8)
       : [];
     if (items.length === 0) {
       close();
       return;
     }
     items.forEach((intern, idx) => {
+      const supervisor = supervisorOf(intern);
+      const idCol = el("span", { class: "search-row-id" }, [
+        el("span", { class: "search-row-name", text: intern.name }),
+      ]);
+      if (supervisor) idCol.appendChild(el("span", { class: "search-row-sup", text: supervisor }));
       const row = el("a", {
         class: "search-row",
         attrs: { href: profileHref(intern.name), role: "option" },
       }, [
         el("span", { class: "avatar avatar-sm", text: initials(intern.name), attrs: { "aria-hidden": "true" } }),
-        el("span", { class: "search-row-name", text: intern.name }),
+        idCol,
       ]);
       row.addEventListener("mousedown", (e) => {
         // mousedown (not click) so it fires before input blur closes the list
@@ -884,6 +893,9 @@ function router() {
   view.innerHTML = "";
   const r = parseRoute();
   setActiveNav(r.route);
+  // The directory has its own in-page filter, so the header search would be a
+  // redundant second box there — hide it on that route only.
+  document.body.classList.toggle("route-directory", r.name === "directory");
   window.scrollTo(0, 0);
 
   if (r.name === "directory") viewDirectory(view);
